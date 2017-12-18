@@ -1,0 +1,14 @@
+{
+	"networks": [
+		{
+			"server_host": "127.0.0.1",
+			"server_port": 40001,
+			"backend_host": "127.0.0.1",
+			"backend_port": 40003,
+			"topic": "default"
+		}
+	],
+	"retry_interval": 2000,
+	"heartbeat_interval": 2000,
+	"heartbeat_timeout": 20000
+}
