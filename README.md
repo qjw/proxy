@@ -81,6 +81,14 @@ go get github.com/qjw/proxy
 ./proxy
 ```
 
+若修改端口等信息，使用--config $conf
+``` json
+{
+	"bind": "127.0.0.1",
+	"port": 40005
+}
+```
+
 > 为了提高响应效率，当out注册到proxy时，proxy会预先向out申请一些空闲的用于传输数据的TCP连接。
 
 ### nginx转发

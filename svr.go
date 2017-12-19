@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -9,6 +11,10 @@ import (
 
 	"github.com/qjw/proxy/msg"
 	"github.com/qjw/proxy/utils"
+)
+
+var (
+	gConfig *Config = nil
 )
 
 type tunnel struct {
@@ -566,11 +572,31 @@ func handle(conn *net.TCPConn, p *ProxyRegistry, c *ControlRegistry) {
 	}
 }
 
+func checkConfig() {
+	if jsonBytes, err := json.MarshalIndent(gConfig, "", "    "); err != nil {
+		panic(err)
+	} else {
+		fmt.Println(string(jsonBytes))
+	}
+}
+
 func main() {
+	confPath := flag.String("config", "", "配置文件")
+	flag.Parse()
+	if confPath == nil || *confPath == "" {
+		gConfig = defaultConfig()
+	} else {
+		gConfig = parseConfig(*confPath)
+	}
+	checkConfig()
+
 	fmt.Println("Starting the server ...")
 	utils.RandomSeed()
 	// tcp服务器
-	listener, err := net.Listen("tcp", "0.0.0.0:40001")
+	listener, err := net.Listen(
+		"tcp",
+		fmt.Sprintf("%s:%d", gConfig.Bind, gConfig.Port),
+	)
 	if err != nil {
 		fmt.Println("Error listening", err.Error())
 		return
