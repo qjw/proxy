@@ -1,20 +1,20 @@
 # proxy适用场景
 ssh本地端口转发，解决 *【A可以主动连接B，B可以主动连接C的场景中，在A机器上间接连接C的需求】*
 
-ssh远程端口转发，解决 *[B可以主动连接A/C的场景中，在主机B上搭桥让A间接连接C的需求]*
+ssh远程端口转发，解决 *【B可以主动连接A/C的场景中，在主机B上搭桥让A间接连接C的需求】*
 
-proxy解决 *[A/C都可以主动连接B的场景中，让A能够间接连接C的需求]*
+proxy解决 *【A/C都可以主动连接B的场景中，让A能够间接连接C的需求】*
 
 ## ngrok
-对于proxy的需求，ngrok也可以实现，和ngrok相比，proxy做了以下修改
+对于proxy的需求，[ngrok](https://github.com/inconshreveable/ngrok)也可以实现，和[ngrok](https://github.com/inconshreveable/ngrok)相比，proxy做了以下修改
 
 1. 增加横向扩展的能力
-1. 增加bind到本地端口的能力，而不是类似ngrok访问一个公网的端口
+1. 增加bind到本地端口的能力，而不是类似[ngrok](https://github.com/inconshreveable/ngrok)访问一个公网的端口
 1. 服务器对于所有的端口转发，只需要一个端口，这在防火墙限制比较严的场合比较管用。
 1. 简化代码，删除http（s）的逻辑，只支持tcp
 1. 证书做成可选，证书做加密、认证非常好的选择，不过并非必需
 
-**部分源码复用ngrok，以后再优化**
+**部分基础代码复用[ngrok](https://github.com/inconshreveable/ngrok)，以后再优化**
 
 # 部署运行
 proxy包含三个程序
@@ -23,6 +23,9 @@ proxy包含三个程序
 3. proxy 部署在A/C都可达的地方B
 
 ## Topic
+
+参考[rabbitMQ](https://www.rabbitmq.com/)的[Topic](https://www.rabbitmq.com/tutorials/tutorial-five-python.html)语义。
+
 在`out`注册到`server`时，会提供一个`Topic`（字符串），对于单个server，这个Topic必须`唯一`，并且后注册的同名Topic会`顶替`之前注册的out。
 
 > 另外一个out使用和自己相同的Topic会将自己踢出来
@@ -127,16 +130,16 @@ go get github.com/qjw/proxy/out
 	"heartbeat_timeout": 20000
 }
 ```
-和in类似，out单实例也支持多路topic。配置中和in不同的是，out并不绑定本地端口，而是增加了下游的主机/端口定义（类似nginx upstream）。例如上面的配置就暴露了out所在主机的ssh/mysql到subject（`ssh/mysql`）
+和in类似，out单实例也支持多路topic。配置中和in不同的是，out并不绑定本地端口，而是增加了上游的主机/端口定义（类似[nginx upstream](http://nginx.org/en/docs/http/ngx_http_upstream_module.html)）。例如上面的配置就暴露了out所在主机的ssh/mysql到Topic（`ssh/mysql`）
 
-> 和in类似，out启动之后，并不会立即连接下游upstream。而是有实际的数据达到才会发起连接
+> 和in类似，out启动之后，并不会立即连接上游upstream。而是有实际的数据达到才会发起连接
 
 **out使用心跳报文做适当的稳定性检测，若因为任何原因掉线，out会一直重试，直到重新连接。**
 
 ## 横向扩展
 对于proxy，利用nginx可以做负载均衡
 
-对于out，若单点性能不够，可以开多个实例，每个实例连接一个proxy到下游的upstream。若单点够好，直接开一个实例，配置中指定不同主机的相同Subject即可。如下
+对于out，若单点性能不够，可以开多个实例，每个实例连接一个proxy到上游的upstream。若单点够好，直接开一个实例，配置中指定不同主机的相同`Topic`即可。如下
 ``` json
 {
 	"networks": [
@@ -169,7 +172,7 @@ in作为客户端，通常不存在什么性能问题，可以随意部署多实
 
 
 # Sock5
-作为proxy，自然就不能无视上网代理，我们可以在需要做上网跳板机上安装ssocks程序，这样就可以在本地1080（或其他端口）启用[socks5](https://zh.wikipedia.org/zh-cn/SOCKS#SOCKS5)代理。然后用out讲1080端口暴露出去，并且使用in绑定到目标机器的localhost，配合[SwitchyOmega](https://github.com/FelisCatus/SwitchyOmega/releases)插件就可以使用proxy隧道上网了。
+作为proxy，自然就不能无视上网代理，我们可以在需要做上网跳板机上安装[ssocks](https://sourceforge.net/projects/ssocks)程序，这样就可以在本地1080（或其他端口）启用[socks5](https://zh.wikipedia.org/zh-cn/SOCKS#SOCKS5)代理。然后用out将1080端口暴露出去，并且使用in绑定到目标机器的localhost，再配合[SwitchyOmega](https://github.com/FelisCatus/SwitchyOmega/releases)插件就可以使用proxy隧道上网了。
 
 源码<https://sourceforge.net/projects/ssocks>
 
